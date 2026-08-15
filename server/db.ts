@@ -30,7 +30,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
 
   const values: InsertUser = { openId: user.openId, lastSignedIn: user.lastSignedIn ?? new Date() };
   const updateSet: Record<string, unknown> = { lastSignedIn: values.lastSignedIn };
-  (["name", "email", "loginMethod", "username", "passwordHash", "sector"] as const).forEach(field => {
+  (["name", "username", "passwordHash"] as const).forEach(field => {
     if (user[field] !== undefined) {
       values[field] = user[field];
       updateSet[field] = user[field];
@@ -131,5 +131,5 @@ export async function markAlertRead(alertId: number, userId: number) {
 
 export async function listAlertReaders(alertId: number) {
   const db = requiredDb(await getDb());
-  return db.select({ id: users.id, name: users.name, username: users.username, sector: users.sector, role: users.role, readAt: alertReads.readAt }).from(users).leftJoin(alertReads, and(eq(alertReads.userId, users.id), eq(alertReads.alertId, alertId))).where(eq(users.role, "user")).orderBy(users.name);
+  return db.select({ id: users.id, name: users.name, username: users.username, role: users.role, readAt: alertReads.readAt }).from(users).leftJoin(alertReads, and(eq(alertReads.userId, users.id), eq(alertReads.alertId, alertId))).where(eq(users.role, "user")).orderBy(users.name);
 }

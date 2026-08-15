@@ -49,8 +49,6 @@ export const institutionalAuthRouter = router({
         name: access.username,
         username: access.username,
         passwordHash: access.passwordHash,
-        sector: null,
-        loginMethod: "generated-individual-access",
         role: "user",
       });
     });

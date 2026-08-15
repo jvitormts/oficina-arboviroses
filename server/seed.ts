@@ -13,8 +13,6 @@ export async function ensureFixedAdmin(): Promise<void> {
     name: "Administrador",
     username: "admin",
     passwordHash: hashPassword(password),
-    sector: "Coordenação de Vigilância em Saúde",
-    loginMethod: "institutional-password",
     role: "admin",
   });
 }
