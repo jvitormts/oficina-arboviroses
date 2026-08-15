@@ -1,0 +1,17 @@
+import { useAuth } from "@/_core/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { LogOut, Menu, ShieldCheck, Siren, UserRound } from "lucide-react";
+import { ReactNode, useState } from "react";
+import { useLocation } from "wouter";
+
+export default function DashboardLayout({ children }: { children: ReactNode }) {
+  const { user, logout } = useAuth();
+  const [location, setLocation] = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const isAdmin = user?.role === "admin";
+  const items = [
+    { label: "Comunicados", path: "/", icon: Siren },
+    ...(isAdmin ? [{ label: "Administração", path: "/administracao", icon: ShieldCheck }] : []),
+  ];
+  return <div className="min-h-screen bg-[#f6f8fb] text-slate-900"><div className="h-1.5 bg-[#ffcd07]" /><header className="sticky top-0 z-40 border-b border-slate-200 bg-white shadow-sm"><div className="mx-auto flex h-18 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6"><div className="flex items-center gap-4"><button className="rounded-sm p-2 text-[#1351b4] hover:bg-blue-50 lg:hidden" aria-label="Abrir navegação" onClick={() => setMenuOpen(!menuOpen)}><Menu className="h-6 w-6" /></button><div className="flex items-center gap-3"><div className="text-2xl font-black tracking-[-0.08em] text-[#1351b4]">saúde<span className="text-[#168821]">.</span></div><div className="hidden h-7 w-px bg-slate-300 sm:block" /><div className="hidden sm:block"><p className="text-sm font-bold text-[#071d41]">Alertas de Arboviroses</p><p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Taubaté · SP</p></div></div></div><div className="flex items-center gap-3"><div className="hidden text-right sm:block"><p className="text-sm font-semibold text-slate-800">{user?.name || "Acesso institucional"}</p><p className="text-xs text-slate-500">{isAdmin ? "Administrador" : "Usuário comum"}</p></div><div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-[#1351b4]"><UserRound className="h-4 w-4" /></div><Button variant="ghost" size="icon" onClick={logout} className="text-slate-600 hover:bg-red-50 hover:text-red-700" aria-label="Sair"><LogOut className="h-4 w-4" /></Button></div></div></header><div className="border-b border-slate-200 bg-white"><nav className={`mx-auto max-w-7xl px-4 sm:px-6 ${menuOpen ? "block" : "hidden lg:block"}`} aria-label="Navegação principal"><div className="flex flex-col py-2 lg:flex-row lg:py-0">{items.map(item => { const active = location === item.path; const Icon = item.icon; return <button key={item.path} onClick={() => { setLocation(item.path); setMenuOpen(false); }} className={`flex items-center gap-2 border-l-4 px-4 py-3 text-sm font-semibold transition-colors lg:border-b-4 lg:border-l-0 ${active ? "border-[#1351b4] bg-blue-50 text-[#1351b4]" : "border-transparent text-slate-600 hover:bg-slate-50 hover:text-[#1351b4]"}`}><Icon className="h-4 w-4" />{item.label}</button>; })}</div></nav></div><main className="px-4 py-6 sm:px-6 lg:py-8">{children}</main><footer className="mt-10 border-t border-slate-200 bg-white"><div className="mx-auto max-w-7xl px-4 py-5 text-xs leading-5 text-slate-500 sm:px-6"><p className="font-semibold text-slate-600">Secretaria Municipal de Saúde · Taubaté-SP</p><p className="mt-1">Canal interno de comunicados epidemiológicos. Em caso de urgência, siga os protocolos vigentes da rede municipal.</p></div></footer></div>;
+}

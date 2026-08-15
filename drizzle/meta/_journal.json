@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1786755529267,
+      "tag": "0000_dapper_ma_gnuci",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1786755982154,
+      "tag": "0001_good_spencer_smythe",
+      "breakpoints": true
+    }
+  ]
+}

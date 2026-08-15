@@ -1,0 +1,34 @@
+# Projeto TODO
+
+- [x] Estruturar a identidade visual institucional inspirada no GOV.BR, com paleta azul e verde, tipografia legível e layout acessível.
+- [x] Implementar autenticação por credenciais e reconhecimento dos perfis administrador e setor de saúde.
+- [x] Modelar alertas com título, resumo, observações, criação e data/hora de publicação agendada.
+- [x] Registrar leituras por usuário, incluindo status e data/hora de leitura.
+- [x] Implementar painel do setor de saúde com lista de alertas publicados e status individual de leitura.
+- [x] Implementar visualização detalhada do alerta e marcação automática de leitura.
+- [x] Implementar painel administrativo para criar, editar, excluir e consultar alertas.
+- [x] Implementar consulta administrativa de leitores e pendências por alerta.
+- [x] Garantir que alertas sejam visíveis somente após a data e a hora programadas.
+- [x] Implementar aviso visual de alto impacto para novos alertas em sessões abertas de usuários comuns.
+- [x] Implementar atualizações periódicas seguras para detectar publicações agendadas durante uma sessão aberta.
+- [x] Validar que o aviso de alto impacto seja exibido somente a usuários comuns, tanto no painel inicial quanto na área administrativa.
+- [x] Validar a recuperação de atualizações de alertas após indisponibilidade ou reconexão de rede.
+- [x] Criar testes automatizados para as regras de visibilidade, leitura e autorização.
+- [x] Validar a interface em desktop e dispositivos móveis, incluindo estados vazios e de erro.
+- [x] Documentar o fluxo operacional para administração e gestão de perfis.
+- [x] Configurar exclusivamente as contas `admin` e `user` com as credenciais fornecidas pelo responsável.
+- [x] Remover da interface administrativa o cadastro de setores e perfis adicionais.
+- [x] Ajustar os rótulos da área de usuário comum para não identificar explicitamente um setor de saúde.
+- [x] Testar os acessos fixos de administrador e usuário comum.
+- [x] Registrar leitura apenas quando o usuário comum abrir um alerta publicado.
+- [x] Exibir para o administrador a contagem de usuários comuns que confirmaram a leitura de cada alerta.
+- [x] Validar que a visualização administrativa não altere o status de leitura do alerta.
+- [x] Criar uma página inicial de acesso com opção para gerar uma credencial individual de usuário comum.
+- [x] Gerar nomes de usuário únicos no formato `usuario-XXXX`, com quatro caracteres alfanuméricos.
+- [x] Gerar senhas simples aleatórias compostas por palavra do dicionário e dois dígitos, exibidas uma única vez para o usuário guardar.
+- [x] Permitir o acesso de múltiplos usuários comuns individuais, mantendo o login administrativo separado.
+- [x] Exibir para o administrador as leituras por credencial individual e o total de confirmações por alerta.
+- [x] Testar geração, unicidade, autenticação e rastreio individual de leituras.
+- [x] Testar autenticação usando uma credencial individual gerada.
+- [x] Testar repetição de geração após colisão de identificador individual.
+- [x] Testar contagem e separação de leituras de credenciais individuais distintas.
