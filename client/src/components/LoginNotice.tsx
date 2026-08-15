@@ -29,7 +29,7 @@ export function LoginNotice({ open, onClose }: { open: boolean; onClose: () => v
             <li>A VISA municipal nunca utilizou o Formulário de Inspeção em Arboviroses.</li>
             <li>Não há fluxo ou Canal oficial de denúncias estabelecido no município quanto às queixas pertinentes à Vigilância Sanitária.</li>
             <li>Não comparece à todas as salas de Situação Regionais de Arboviroses, por falta de carro para transporte dos funcionários da Vigilância Epidemiológica.</li>
-            <li>O novo responsável pela Vigilância Epidemiológica assumiu o cargo à 3 meses, não possuindo acesso à nenhum documento e nem planilhas de monitoramento municipais, bem como nos 3 meses passados não monitorou a digitação de fichas no SINAN, estando os dados municipais oficiais desatualizados.</li>
+            <li>O novo responsável pela Vigilância Epidemiológica assumiu o cargo há 3 meses, não possuindo acesso à nenhum documento e nem planilhas de monitoramento municipais, bem como nos 3 meses passados não monitorou a digitação de fichas no SINAN, estando os dados municipais oficiais desatualizados.</li>
           </ul>
         </div>
         <div className="flex justify-end pt-2">

@@ -6,7 +6,7 @@ import { notifyAlertPublished } from "../push/alertNotifier";
 
 const alertInput = z.object({
   title: z.string().trim().min(5, "Informe um título com pelo menos 5 caracteres.").max(180),
-  summary: z.string().trim().min(10, "Informe um resumo com pelo menos 10 caracteres.").max(600),
+  summary: z.string().trim().min(10, "Informe uma explicação com pelo menos 10 caracteres.").max(1500),
   observations: z.string().trim().max(5000).optional().nullable(),
   scheduledFor: z.coerce.date(),
 });
