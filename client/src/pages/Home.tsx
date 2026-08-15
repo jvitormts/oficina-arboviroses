@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import DashboardLayout from "@/components/DashboardLayout";
+import { LoginNotice } from "@/components/LoginNotice";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -218,9 +219,13 @@ function AdminDashboard() {
 export default function Home() {
   const { loading, isAuthenticated, user } = useAuth();
   const [location] = useLocation();
+  const [showNotice, setShowNotice] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem("login_notice_shown") !== "1";
+  });
   if (loading) return <div className="flex min-h-screen items-center justify-center text-slate-500"><Loader2 className="mr-2 h-5 w-5 animate-spin" />Carregando acesso...</div>;
   if (!isAuthenticated || !user) return <InstitutionalLogin />;
   const isAdmin = user.role === "admin";
   const page = isAdmin && location === "/administracao" ? <AdminDashboard /> : <SectorDashboard highImpactEnabled={shouldShowHighImpact(user.role as "admin" | "user" | undefined)} canMarkRead={user.role === "user"} />;
-  return <DashboardLayout>{page}</DashboardLayout>;
+  return <DashboardLayout>{page}<LoginNotice open={showNotice} onClose={() => { sessionStorage.setItem("login_notice_shown", "1"); setShowNotice(false); }} /></DashboardLayout>;
 }

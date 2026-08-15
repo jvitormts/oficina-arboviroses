@@ -9,6 +9,8 @@ self.addEventListener("push", (event) => {
       icon: payload.icon || "/icon-192.png",
       badge: payload.badge || "/icon-192.png",
       vibrate: [200, 100, 200],
+      tag: `alert-${payload.data?.alertId || Date.now()}`,
+      renotify: true,
       data: payload.data || {},
     })
   );

@@ -12,13 +12,17 @@ function getAudioContext(): AudioContext | null {
   return audioCtx;
 }
 
-export function notifyNewAlert() {
+export async function notifyNewAlert() {
   if ("vibrate" in navigator) {
     navigator.vibrate(200);
   }
 
   const ctx = getAudioContext();
   if (!ctx) return;
+
+  if (ctx.state === "suspended") {
+    await ctx.resume();
+  }
 
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
