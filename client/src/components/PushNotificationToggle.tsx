@@ -11,7 +11,7 @@ export function PushNotificationToggle() {
 
   const subscribeMutation = trpc.push.subscribe.useMutation({
     onSuccess: () => { setIsEnabled(true); toast.success("Notificações ativadas!"); },
-    onError: (err) => toast.error("Erro ao ativar: " + err.message),
+    onError: (err) => { console.error("[Push] Server subscribe failed:", err); toast.error("Erro ao ativar: " + err.message); },
   });
 
   const unsubscribeMutation = trpc.push.unsubscribe.useMutation({
@@ -29,7 +29,8 @@ export function PushNotificationToggle() {
     } else {
       const granted = await requestPushPermission();
       if (!granted) { toast.warning("Permissão de notificações negada"); return; }
-      await subscribeToPush((data) => subscribeMutation.mutateAsync(data));
+      const ok = await subscribeToPush((data) => subscribeMutation.mutateAsync(data));
+      if (!ok) { toast.error("Falha ao ativar notificações. Verifique o console do navegador."); }
     }
   };
 
