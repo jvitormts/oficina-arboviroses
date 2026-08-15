@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { findArrivingAlert, shouldPollForAlerts, shouldShowAlertLoadError, shouldShowHighImpact } from "@/lib/alertPresentation";
+import { notifyNewAlert } from "@/lib/notify";
 import { AlertTriangle, BellRing, CalendarClock, CheckCircle2, ChevronRight, ClipboardList, Eye, FileText, Loader2, LogIn, Pencil, Plus, ShieldAlert, Trash2, UsersRound, X } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -151,7 +152,10 @@ function SectorDashboard({ highImpactEnabled = true, canMarkRead = true }: { hig
     const ids = new Set(alerts.map(alert => alert.id));
     if (knownAlerts.current) {
       const arrival = findArrivingAlert(knownAlerts.current, alerts);
-      if (arrival && highImpactEnabled) setImpactAlert(arrival);
+      if (arrival && highImpactEnabled) {
+        notifyNewAlert();
+        setImpactAlert(arrival);
+      }
     }
     knownAlerts.current = ids;
   }, [alerts]);
