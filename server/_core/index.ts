@@ -6,6 +6,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
+import { ensureFixedAdmin } from "../seed";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 
@@ -29,6 +30,12 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  try {
+    await ensureFixedAdmin();
+  } catch (error) {
+    console.error("[Seed] Falha ao garantir a conta administrativa:", error);
+  }
+
   const app = express();
   const server = createServer(app);
   // Configure body parser with larger size limit for file uploads

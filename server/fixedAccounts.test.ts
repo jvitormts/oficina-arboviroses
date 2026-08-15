@@ -4,7 +4,7 @@ import { isFixedInstitutionalOpenId, isFixedInstitutionalUsername } from "./fixe
 describe("acesso administrativo e sessões individuais", () => {
   it("mantém somente o administrador como acesso fixo", () => {
     expect(isFixedInstitutionalUsername("admin")).toBe(true);
-    expect(isFixedInstitutionalUsername("user")).toBe(true);
+    expect(isFixedInstitutionalUsername("user")).toBe(false);
     expect(isFixedInstitutionalUsername("vigilancia")).toBe(false);
   });
 
