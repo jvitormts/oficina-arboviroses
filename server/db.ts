@@ -1,68 +1,19 @@
 import { and, asc, desc, eq, gt, lte, sql } from "drizzle-orm";
-import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
+import mysql from "mysql2/promise";
+import { drizzle } from "drizzle-orm/mysql2";
 import { Alert, alerts, alertReads, InsertAlert, InsertUser, users, User } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { isAlertPublished, resolveReadReceipt } from "./alertRules";
-import fs from "node:fs";
-import path from "node:path";
 
-let _db: ReturnType<typeof drizzle> | null = null;
-
-// Idempotente: garante o schema em bancos novos sem depender de `drizzle-kit migrate`.
-// Colunas de data usam milissegundos (inteiro), consistente com `mode: "timestamp_ms"`.
-const SCHEMA_SQL = `
-CREATE TABLE IF NOT EXISTS users (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  openId TEXT NOT NULL UNIQUE,
-  name TEXT,
-  email TEXT,
-  username TEXT UNIQUE,
-  passwordHash TEXT,
-  sector TEXT,
-  loginMethod TEXT,
-  role TEXT NOT NULL DEFAULT 'user',
-  createdAt INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000),
-  updatedAt INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000),
-  lastSignedIn INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000)
-);
-
-CREATE TABLE IF NOT EXISTS alerts (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  title TEXT NOT NULL,
-  summary TEXT NOT NULL,
-  observations TEXT,
-  createdBy INTEGER NOT NULL REFERENCES users(id),
-  createdAt INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000),
-  scheduledFor INTEGER NOT NULL
-);
-CREATE INDEX IF NOT EXISTS alerts_scheduled_for_idx ON alerts(scheduledFor);
-
-CREATE TABLE IF NOT EXISTS alertReads (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  alertId INTEGER NOT NULL REFERENCES alerts(id) ON DELETE CASCADE,
-  userId INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  readAt INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000)
-);
-CREATE UNIQUE INDEX IF NOT EXISTS alert_reads_alert_user_unique ON alertReads(alertId, userId);
-CREATE INDEX IF NOT EXISTS alert_reads_user_idx ON alertReads(userId);
-`;
-
-function resolveSqlitePath() {
-  const raw = process.env.DATABASE_URL ?? ENV.databaseUrl ?? "file:./data/app.db";
-  const withoutPrefix = raw.replace(/^file:/, "").replace(/^sqlite:\/\//, "").replace(/^sqlite:/, "");
-  return withoutPrefix.startsWith("./") || withoutPrefix.startsWith("/") ? withoutPrefix : `./${withoutPrefix}`;
-}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _db: any = null;
 
 export async function getDb() {
   if (!_db) {
-    const sqlitePath = resolveSqlitePath();
-    const dir = path.dirname(sqlitePath);
-    fs.mkdirSync(dir, { recursive: true });
-    const sqlite = new Database(sqlitePath);
-    sqlite.pragma("foreign_keys = ON");
-    sqlite.exec(SCHEMA_SQL);
-    _db = drizzle(sqlite);
+    const url = process.env.DATABASE_URL ?? ENV.databaseUrl;
+    if (!url) throw new Error("DATABASE_URL não está configurado.");
+    const pool = await mysql.createPool(url);
+    _db = drizzle(pool as any);
   }
   return _db;
 }
@@ -96,7 +47,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     updateSet.role = "admin";
   }
 
-  await db.insert(users).values(values).onConflictDoUpdate({ target: users.openId, set: updateSet });
+  await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
 }
 
 export async function getUserByOpenId(openId: string) {
@@ -114,25 +65,25 @@ export async function getInstitutionalUserByUsername(username: string) {
 export async function createInstitutionalUser(user: InsertUser) {
   const db = requiredDb(await getDb());
   const result = await db.insert(users).values({ ...user, lastSignedIn: new Date() });
-  return { id: Number((result as any).lastInsertRowid ?? 0) };
+  return { id: Number((result as any).insertId ?? 0) };
 }
 
 export async function createAlert(alert: Omit<InsertAlert, "id" | "createdAt">) {
   const db = requiredDb(await getDb());
   const result = await db.insert(alerts).values(alert);
-  return { id: Number((result as any).lastInsertRowid ?? 0) };
+  return { id: Number((result as any).insertId ?? 0) };
 }
 
 export async function updateAlert(id: number, changes: Partial<Omit<InsertAlert, "id" | "createdAt" | "createdBy">>) {
   const db = requiredDb(await getDb());
   const result = await db.update(alerts).set(changes).where(eq(alerts.id, id));
-  return Number((result as any).changes ?? 0) > 0;
+  return Number((result as any).affectedRows ?? 0) > 0;
 }
 
 export async function deleteAlert(id: number) {
   const db = requiredDb(await getDb());
   const result = await db.delete(alerts).where(eq(alerts.id, id));
-  return Number((result as any).changes ?? 0) > 0;
+  return Number((result as any).affectedRows ?? 0) > 0;
 }
 
 export async function listAllAlerts() {
