@@ -150,14 +150,16 @@ function SectorDashboard({ highImpactEnabled = true, canMarkRead = true }: { hig
 
   useEffect(() => {
     const ids = new Set(alerts.map(alert => alert.id));
-    if (knownAlerts.current) {
+    if (ids.size > 0 && knownAlerts.current) {
       const arrival = findArrivingAlert(knownAlerts.current, alerts);
       if (arrival && highImpactEnabled) {
         notifyNewAlert();
         setImpactAlert(arrival);
       }
     }
-    knownAlerts.current = ids;
+    if (ids.size > 0) {
+      knownAlerts.current = ids;
+    }
   }, [alerts]);
 
   const openAlert = (alert: AlertItem) => {
