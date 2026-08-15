@@ -1,0 +1,13 @@
+{
+  "name": "Alertas de Arboviroses - Taubaté",
+  "short_name": "Alertas Taubaté",
+  "description": "Plataforma de alertas epidemiológicos para vigilância em saúde",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#071d41",
+  "theme_color": "#071d41",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import * as db from "../db";
 import { adminProcedure, protectedProcedure, router } from "../_core/trpc";
+import { notifyAlertPublished } from "../push/alertNotifier";
 
 const alertInput = z.object({
   title: z.string().trim().min(5, "Informe um título com pelo menos 5 caracteres.").max(180),
@@ -41,7 +42,11 @@ export const alertsRouter = router({
   adminList: adminProcedure.query(async () => db.listAllAlerts()),
 
   create: adminProcedure.input(alertInput).mutation(async ({ ctx, input }) => {
-    return db.createAlert({ ...input, createdBy: ctx.user.id });
+    const alert = await db.createAlert({ ...input, createdBy: ctx.user.id });
+    if (new Date(input.scheduledFor) <= new Date()) {
+      notifyAlertPublished({ id: alert.id, title: input.title, summary: input.summary }).catch(console.error);
+    }
+    return alert;
   }),
 
   update: adminProcedure

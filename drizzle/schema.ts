@@ -29,7 +29,23 @@ export const alertReads = mysqlTable("alertReads", {
   readAt: timestamp("readAt").notNull().defaultNow(),
 }, table => [uniqueIndex("alert_reads_alert_user_unique").on(table.alertId, table.userId), index("alert_reads_user_idx").on(table.userId)]);
 
+export const pushSubscriptions = mysqlTable("pushSubscriptions", {
+  id: int("id").primaryKey().autoincrement(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  endpoint: varchar("endpoint", { length: 500 }).notNull(),
+  p256dh: varchar("p256dh", { length: 255 }).notNull(),
+  auth: varchar("auth", { length: 255 }).notNull(),
+  userAgent: varchar("userAgent", { length: 500 }).default(sql`NULL`),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+}, table => [
+  uniqueIndex("push_subscriptions_user_unique").on(table.userId),
+  index("push_subscriptions_endpoint_idx").on(table.endpoint),
+]);
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Alert = typeof alerts.$inferSelect;
 export type InsertAlert = typeof alerts.$inferInsert;
+export type PushSubscription = typeof pushSubscriptions.$inferSelect;
+export type InsertPushSubscription = typeof pushSubscriptions.$inferInsert;
