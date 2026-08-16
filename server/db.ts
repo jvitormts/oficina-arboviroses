@@ -1,6 +1,6 @@
 import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
-import mysql from "mysql2/promise";
-import { drizzle } from "drizzle-orm/mysql2";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import { Alert, alerts, alertReads, InsertAlert, InsertUser, users, User } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { resolveReadReceipt } from "./alertRules";
@@ -12,8 +12,8 @@ export async function getDb() {
   if (!_db) {
     const url = process.env.DATABASE_URL ?? ENV.databaseUrl;
     if (!url) throw new Error("DATABASE_URL não está configurado.");
-    const pool = await mysql.createPool(url);
-    _db = drizzle(pool as any);
+    const client = postgres(url, { max: 5, idle_timeout: 20, connect_timeout: 10 });
+    _db = drizzle(client);
   }
   return _db;
 }
@@ -47,7 +47,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     updateSet.role = "admin";
   }
 
-  await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
+  await db.insert(users).values(values).onConflictDoUpdate({ target: users.openId, set: updateSet });
 }
 
 export async function getUserByOpenId(openId: string) {
@@ -64,14 +64,14 @@ export async function getInstitutionalUserByUsername(username: string) {
 
 export async function createInstitutionalUser(user: InsertUser) {
   const db = requiredDb(await getDb());
-  const result = await db.insert(users).values({ ...user, lastSignedIn: new Date() });
-  return { id: Number((result as any).insertId ?? 0) };
+  const result = await db.insert(users).values({ ...user, lastSignedIn: new Date() }).returning({ id: users.id });
+  return { id: result[0]?.id ?? 0 };
 }
 
 export async function createAlert(alert: Omit<InsertAlert, "id" | "createdAt">) {
   const db = requiredDb(await getDb());
-  const result = await db.insert(alerts).values(alert);
-  return { id: Number((result as any).insertId ?? 0) };
+  const result = await db.insert(alerts).values(alert).returning({ id: alerts.id });
+  return { id: result[0]?.id ?? 0 };
 }
 
 export async function updateAlert(id: number, changes: Partial<Omit<InsertAlert, "id" | "createdAt" | "createdBy" | "publishedAt">>) {
@@ -144,8 +144,8 @@ export async function markAlertRead(alertId: number, userId: number) {
 
 export async function updateUserPassword(userId: number, passwordHash: string) {
   const db = requiredDb(await getDb());
-  const result = await db.update(users).set({ passwordHash }).where(eq(users.id, userId));
-  return Number((result as any).affectedRows ?? 0) > 0;
+  const result = await db.update(users).set({ passwordHash }).where(eq(users.id, userId)).returning({ id: users.id });
+  return result.length > 0;
 }
 
 export async function listAlertReaders(alertId: number) {

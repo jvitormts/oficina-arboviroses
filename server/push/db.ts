@@ -11,7 +11,8 @@ export async function upsertSubscription(userId: number, data: {
   const db = await getDb();
   await db.insert(pushSubscriptions)
     .values({ userId, ...data })
-    .onDuplicateKeyUpdate({
+    .onConflictDoUpdate({
+      target: pushSubscriptions.userId,
       set: {
         endpoint: data.endpoint,
         p256dh: data.p256dh,
