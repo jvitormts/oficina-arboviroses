@@ -8,16 +8,11 @@ const alertInput = z.object({
   title: z.string().trim().min(5, "Informe um título com pelo menos 5 caracteres.").max(180),
   summary: z.string().trim().min(10, "Informe uma explicação com pelo menos 10 caracteres.").max(2500),
   observations: z.string().trim().max(5000).optional().nullable(),
-  scheduledFor: z.coerce.date(),
 });
 
 export const alertsRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
     return db.listPublishedAlertsForUser(ctx.user.id);
-  }),
-
-  nextPublication: protectedProcedure.query(async () => {
-    return db.getNextScheduledPublication();
   }),
 
   get: protectedProcedure
@@ -42,12 +37,20 @@ export const alertsRouter = router({
   adminList: adminProcedure.query(async () => db.listAllAlerts()),
 
   create: adminProcedure.input(alertInput).mutation(async ({ ctx, input }) => {
-    const alert = await db.createAlert({ ...input, createdBy: ctx.user.id });
-    if (new Date(input.scheduledFor) <= new Date()) {
-      notifyAlertPublished({ id: alert.id, title: input.title, summary: input.summary }).catch(console.error);
-    }
-    return alert;
+    return db.createAlert({ ...input, createdBy: ctx.user.id });
   }),
+
+  publish: adminProcedure
+    .input(z.object({ id: z.number().int().positive() }))
+    .mutation(async ({ input }) => {
+      const existing = await db.getAlertById(input.id);
+      if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Alerta não encontrado." });
+      if (existing.publishedAt) throw new TRPCError({ code: "FORBIDDEN", message: "Este alerta já foi publicado." });
+      const published = await db.publishAlert(input.id);
+      if (!published) throw new TRPCError({ code: "NOT_FOUND", message: "Alerta não encontrado." });
+      notifyAlertPublished({ id: input.id, title: existing.title, summary: existing.summary }).catch(console.error);
+      return { success: true };
+    }),
 
   update: adminProcedure
     .input(alertInput.partial().extend({ id: z.number().int().positive() }))
@@ -55,7 +58,7 @@ export const alertsRouter = router({
       const { id, ...changes } = input;
       const existing = await db.getAlertById(id);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Alerta não encontrado." });
-      if (new Date(existing.scheduledFor) <= new Date()) {
+      if (existing.publishedAt) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Não é possível editar um alerta já publicado." });
       }
       const result = await db.updateAlert(id, changes);

@@ -1,9 +1,9 @@
-import { and, asc, desc, eq, gt, lte, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
 import mysql from "mysql2/promise";
 import { drizzle } from "drizzle-orm/mysql2";
 import { Alert, alerts, alertReads, InsertAlert, InsertUser, users, User } from "../drizzle/schema";
 import { ENV } from "./_core/env";
-import { isAlertPublished, resolveReadReceipt } from "./alertRules";
+import { resolveReadReceipt } from "./alertRules";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _db: any = null;
@@ -74,7 +74,7 @@ export async function createAlert(alert: Omit<InsertAlert, "id" | "createdAt">) 
   return { id: Number((result as any).insertId ?? 0) };
 }
 
-export async function updateAlert(id: number, changes: Partial<Omit<InsertAlert, "id" | "createdAt" | "createdBy">>) {
+export async function updateAlert(id: number, changes: Partial<Omit<InsertAlert, "id" | "createdAt" | "createdBy" | "publishedAt">>) {
   const db = requiredDb(await getDb());
   const existing = await getAlertById(id);
   if (!existing) return false;
@@ -85,6 +85,15 @@ export async function updateAlert(id: number, changes: Partial<Omit<InsertAlert,
 export async function getAlertById(id: number) {
   const db = requiredDb(await getDb());
   return (await db.select().from(alerts).where(eq(alerts.id, id)).limit(1))[0] ?? null;
+}
+
+export async function publishAlert(id: number) {
+  const db = requiredDb(await getDb());
+  const existing = await getAlertById(id);
+  if (!existing) return false;
+  if (existing.publishedAt) return true;
+  await db.update(alerts).set({ publishedAt: new Date() }).where(eq(alerts.id, id));
+  return true;
 }
 
 export async function deleteAlert(id: number) {
@@ -98,7 +107,7 @@ export async function deleteAlert(id: number) {
 export async function listAllAlerts() {
   const db = requiredDb(await getDb());
   const [allAlerts, readCounts] = await Promise.all([
-    db.select().from(alerts).orderBy(desc(alerts.scheduledFor)),
+    db.select().from(alerts).orderBy(desc(alerts.createdAt)),
     db.select({ alertId: alertReads.alertId, total: sql<number>`count(*)` as any })
       .from(alertReads)
       .innerJoin(users, eq(users.id, alertReads.userId))
@@ -112,20 +121,15 @@ export async function listAllAlerts() {
 
 export async function listPublishedAlertsForUser(userId: number) {
   const db = requiredDb(await getDb());
-  const rows = await db.select({ id: alerts.id, title: alerts.title, summary: alerts.summary, observations: alerts.observations, createdAt: alerts.createdAt, scheduledFor: alerts.scheduledFor, readId: alertReads.id, readAt: alertReads.readAt }).from(alerts).leftJoin(alertReads, and(eq(alertReads.alertId, alerts.id), eq(alertReads.userId, userId))).where(lte(alerts.scheduledFor, new Date())).orderBy(desc(alerts.scheduledFor));
+  const rows = await db.select({ id: alerts.id, title: alerts.title, summary: alerts.summary, observations: alerts.observations, createdAt: alerts.createdAt, publishedAt: alerts.publishedAt, readId: alertReads.id, readAt: alertReads.readAt }).from(alerts).leftJoin(alertReads, and(eq(alertReads.alertId, alerts.id), eq(alertReads.userId, userId))).where(isNotNull(alerts.publishedAt)).orderBy(desc(alerts.publishedAt));
   return rows.map((row: any) => ({ ...row, isRead: Boolean(row.readId), readAt: row.readAt }));
-}
-
-export async function getNextScheduledPublication() {
-  const db = requiredDb(await getDb());
-  return (await db.select({ scheduledFor: alerts.scheduledFor }).from(alerts).where(gt(alerts.scheduledFor, new Date())).orderBy(asc(alerts.scheduledFor)).limit(1))[0] ?? null;
 }
 
 export async function getAlertForUser(id: number, user: User) {
   const db = requiredDb(await getDb());
-  const filter = user.role === "admin" ? eq(alerts.id, id) : and(eq(alerts.id, id), lte(alerts.scheduledFor, new Date()));
+  const filter = user.role === "admin" ? eq(alerts.id, id) : and(eq(alerts.id, id), isNotNull(alerts.publishedAt));
   const alert = (await db.select().from(alerts).where(filter).limit(1))[0];
-  if (alert && user.role !== "admin" && !isAlertPublished(alert.scheduledFor)) return undefined;
+  if (alert && user.role !== "admin" && !alert.publishedAt) return undefined;
   return alert;
 }
 

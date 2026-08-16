@@ -19,8 +19,8 @@ export const alerts = mysqlTable("alerts", {
   observations: text("observations").default(sql`NULL`),
   createdBy: int("createdBy").notNull().references(() => users.id),
   createdAt: timestamp("createdAt").notNull().defaultNow(),
-  scheduledFor: timestamp("scheduledFor").notNull(),
-}, table => [index("alerts_scheduled_for_idx").on(table.scheduledFor)]);
+  publishedAt: timestamp("publishedAt").default(sql`NULL`),
+});
 
 export const alertReads = mysqlTable("alertReads", {
   id: int("id").primaryKey().autoincrement(),
