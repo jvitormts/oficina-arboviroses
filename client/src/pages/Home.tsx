@@ -150,18 +150,19 @@ function SectorDashboard({ highImpactEnabled = true, canMarkRead = true }: { hig
   }, [alertsQuery.refetch, nextPublicationQuery.data?.scheduledFor, nextPublicationQuery.refetch, online]);
 
   useEffect(() => {
+    if (alertsQuery.isLoading) return;
     const ids = new Set(alerts.map(alert => alert.id));
-    if (ids.size > 0 && knownAlerts.current) {
-      const arrival = findArrivingAlert(knownAlerts.current, alerts);
-      if (arrival && highImpactEnabled) {
-        notifyNewAlert();
-        setImpactAlert(arrival);
-      }
-    }
-    if (ids.size > 0) {
+    if (knownAlerts.current === null) {
       knownAlerts.current = ids;
+      return;
     }
-  }, [alerts]);
+    const arrival = findArrivingAlert(knownAlerts.current, alerts);
+    if (arrival && highImpactEnabled) {
+      notifyNewAlert();
+      setImpactAlert(arrival);
+    }
+    knownAlerts.current = ids;
+  }, [alerts, alertsQuery.isLoading, highImpactEnabled]);
 
   const openAlert = (alert: AlertItem) => {
     setSelected(alert);
