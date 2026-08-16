@@ -53,6 +53,11 @@ export const alertsRouter = router({
     .input(alertInput.partial().extend({ id: z.number().int().positive() }))
     .mutation(async ({ input }) => {
       const { id, ...changes } = input;
+      const existing = await db.getAlertById(id);
+      if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Alerta não encontrado." });
+      if (new Date(existing.scheduledFor) <= new Date()) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Não é possível editar um alerta já publicado." });
+      }
       const result = await db.updateAlert(id, changes);
       if (!result) throw new TRPCError({ code: "NOT_FOUND", message: "Alerta não encontrado." });
       return result;

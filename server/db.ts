@@ -80,6 +80,11 @@ export async function updateAlert(id: number, changes: Partial<Omit<InsertAlert,
   return Number((result as any).affectedRows ?? 0) > 0;
 }
 
+export async function getAlertById(id: number) {
+  const db = requiredDb(await getDb());
+  return (await db.select().from(alerts).where(eq(alerts.id, id)).limit(1))[0] ?? null;
+}
+
 export async function deleteAlert(id: number) {
   const db = requiredDb(await getDb());
   const result = await db.delete(alerts).where(eq(alerts.id, id));
@@ -127,6 +132,12 @@ export async function markAlertRead(alertId: number, userId: number) {
   if (existing) return receipt;
   await db.insert(alertReads).values({ alertId, userId, readAt: receipt.readAt });
   return receipt;
+}
+
+export async function updateUserPassword(userId: number, passwordHash: string) {
+  const db = requiredDb(await getDb());
+  const result = await db.update(users).set({ passwordHash }).where(eq(users.id, userId));
+  return Number((result as any).affectedRows ?? 0) > 0;
 }
 
 export async function listAlertReaders(alertId: number) {

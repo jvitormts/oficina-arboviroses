@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { trpc } from "@/lib/trpc";
 import { findArrivingAlert, shouldPollForAlerts, shouldShowAlertLoadError, shouldShowHighImpact } from "@/lib/alertPresentation";
 import { notifyNewAlert } from "@/lib/notify";
-import { AlertTriangle, BellRing, CalendarClock, CheckCircle2, ChevronRight, ClipboardList, Eye, FileText, Loader2, LogIn, Pencil, Plus, ShieldAlert, Trash2, UsersRound, X } from "lucide-react";
+import { AlertTriangle, BellRing, CalendarClock, CheckCircle2, ChevronRight, ClipboardList, Eye, FileText, KeyRound, Loader2, LogIn, Pencil, Plus, ShieldAlert, Trash2, UsersRound, X } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -197,22 +197,70 @@ function ReadersDialog({ alert, onClose }: { alert: AdminAlert | null; onClose: 
   return <Dialog open={Boolean(alert)} onOpenChange={open => !open && onClose()}><DialogContent className="max-w-2xl rounded-sm"><DialogHeader><DialogTitle className="text-[#071d41]">Confirmação de leitura</DialogTitle><DialogDescription>{alert?.title}</DialogDescription></DialogHeader><div className="max-h-96 overflow-y-auto pt-2">{readers.isLoading ? <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div> : readers.data?.length === 0 ? <p className="py-8 text-center text-sm text-slate-500">Nenhum usuário institucional cadastrado.</p> : <div className="divide-y rounded-sm border">{readers.data?.map((reader: { id: number; name: string | null; username: string | null; role: string; readAt: Date | null }) => <div key={reader.id} className="flex items-center justify-between gap-4 p-4"><div><p className="font-semibold text-slate-800">{reader.name || reader.username || "Usuário institucional"}</p><p className="mt-1 text-xs text-slate-500">{reader.role === "admin" ? "Administrador" : "Usuário comum"}</p></div>{reader.readAt ? <div className="text-right"><StatusChip read /><p className="mt-1 text-xs text-slate-500">{formatDate(reader.readAt)}</p></div> : <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800">Pendente</Badge>}</div>)}</div>}</div></DialogContent></Dialog>;
 }
 
+function PasswordChangeDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const changePassword = trpc.auth.changePassword.useMutation({
+    onSuccess: () => { toast.success("Senha alterada com sucesso!"); setCurrentPassword(""); setNewPassword(""); setConfirmPassword(""); onClose(); },
+    onError: error => toast.error(error.message),
+  });
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (newPassword !== confirmPassword) { toast.error("As senhas não conferem."); return; }
+    changePassword.mutate({ currentPassword, newPassword });
+  };
+  return (
+    <Dialog open={open} onOpenChange={o => !o && onClose()}>
+      <DialogContent className="max-w-md rounded-sm">
+        <DialogHeader>
+          <DialogTitle className="text-[#071d41]">Alterar senha</DialogTitle>
+          <DialogDescription>Informe sua senha atual e defina uma nova senha.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={submit} className="space-y-4 pt-3">
+          <div className="space-y-2">
+            <Label htmlFor="current-password">Senha atual</Label>
+            <Input id="current-password" type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="new-password">Nova senha</Label>
+            <Input id="new-password" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} minLength={6} required />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="confirm-password">Confirmar nova senha</Label>
+            <Input id="confirm-password" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} minLength={6} required />
+          </div>
+          <div className="flex justify-end gap-3 border-t pt-5">
+            <Button type="button" variant="outline" onClick={onClose} className="rounded-sm">Cancelar</Button>
+            <Button type="submit" disabled={changePassword.isPending} className="rounded-sm bg-[#1351b4] hover:bg-[#0c3f8f]">
+              {changePassword.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Salvar nova senha
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function AdminDashboard() {
   const utils = trpc.useUtils();
   const alerts = trpc.alerts.adminList.useQuery();
   const [formAlert, setFormAlert] = useState<AdminAlert | null | undefined>(undefined);
   const [readerAlert, setReaderAlert] = useState<AdminAlert | null>(null);
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const remove = trpc.alerts.remove.useMutation({ onSuccess: () => { toast.success("Alerta excluído."); utils.alerts.adminList.invalidate(); }, onError: error => toast.error(error.message) });
   const allAlerts = (alerts.data ?? []) as AdminAlert[];
   const stats = useMemo(() => ({ scheduled: allAlerts.filter(alert => new Date(alert.scheduledFor) > new Date()).length, published: allAlerts.filter(alert => new Date(alert.scheduledFor) <= new Date()).length }), [allAlerts]);
   return <>
     <div className="mx-auto max-w-6xl space-y-7">
-      <section className="rounded-sm bg-[#071d41] px-6 py-7 text-white sm:px-8"><div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center"><div><p className="text-sm font-semibold text-blue-200">Coordenação de Vigilância em Saúde</p><h1 className="mt-2 text-3xl font-extrabold tracking-tight">Gestão de alertas</h1><p className="mt-2 text-blue-100">Planeje publicações, acompanhe leituras e mantenha a rede de saúde informada.</p></div><Button onClick={() => setFormAlert(null)} className="rounded-sm bg-[#ffcd07] font-bold text-[#071d41] hover:bg-[#f0bb00]"><Plus className="mr-2 h-4 w-4" />Novo alerta</Button></div></section>
+      <section className="rounded-sm bg-[#071d41] px-6 py-7 text-white sm:px-8"><div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center"><div><p className="text-sm font-semibold text-blue-200">Coordenação de Vigilância em Saúde</p><h1 className="mt-2 text-3xl font-extrabold tracking-tight">Gestão de alertas</h1><p className="mt-2 text-blue-100">Planeje publicações, acompanhe leituras e mantenha a rede de saúde informada.</p></div><div className="flex flex-wrap gap-3"><Button variant="outline" onClick={() => setPasswordOpen(true)} className="rounded-sm border-white/30 text-white hover:bg-white/10 hover:text-white"><KeyRound className="mr-2 h-4 w-4" />Alterar senha</Button><Button onClick={() => setFormAlert(null)} className="rounded-sm bg-[#ffcd07] font-bold text-[#071d41] hover:bg-[#f0bb00]"><Plus className="mr-2 h-4 w-4" />Novo alerta</Button></div></div></section>
       <div className="grid gap-4 sm:grid-cols-2"><div className="rounded-sm border-l-4 border-[#1351b4] bg-white p-5 shadow-sm"><p className="text-sm text-slate-600">Publicados</p><p className="mt-1 text-3xl font-bold text-[#071d41]">{stats.published}</p></div><div className="rounded-sm border-l-4 border-[#ffcd07] bg-white p-5 shadow-sm"><p className="text-sm text-slate-600">Agendados</p><p className="mt-1 text-3xl font-bold text-[#071d41]">{stats.scheduled}</p></div></div>
-      <section className="overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm"><div className="flex items-center justify-between border-b bg-slate-50 px-6 py-4"><div><h2 className="font-bold text-[#071d41]">Alertas cadastrados</h2><p className="text-xs text-slate-500">O total de leituras considera somente confirmações do usuário comum.</p></div></div>{alerts.isLoading ? <div className="flex justify-center p-12"><Loader2 className="h-5 w-5 animate-spin" /></div> : allAlerts.length === 0 ? <div className="p-12 text-center"><FileText className="mx-auto h-9 w-9 text-slate-400" /><p className="mt-3 text-sm text-slate-600">Ainda não há alertas cadastrados.</p></div> : <div className="divide-y">{allAlerts.map(alert => { const scheduled = new Date(alert.scheduledFor) > new Date(); return <div key={alert.id} className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-[#071d41]">{alert.title}</h3><Badge className={scheduled ? "bg-amber-100 text-amber-900 hover:bg-amber-100" : "bg-emerald-100 text-emerald-800 hover:bg-emerald-100"}>{scheduled ? "Agendado" : "Publicado"}</Badge><Badge className="gap-1 bg-blue-100 text-blue-800 hover:bg-blue-100"><UsersRound className="h-3.5 w-3.5" />{alert.readCount} {alert.readCount === 1 ? "leitura" : "leituras"}</Badge></div><p className="mt-1 line-clamp-1 text-sm text-slate-600">{alert.summary}</p><p className="mt-2 text-xs text-slate-500">Publicação: {formatDate(alert.scheduledFor)} · Criado: {formatDate(alert.createdAt)}</p></div><div className="flex flex-wrap gap-2"><Button variant="outline" size="sm" onClick={() => setReaderAlert(alert)} className="rounded-sm"><UsersRound className="mr-1.5 h-4 w-4" />Leituras</Button><Button variant="outline" size="sm" onClick={() => setFormAlert(alert)} className="rounded-sm"><Pencil className="mr-1.5 h-4 w-4" />Editar</Button><Button variant="outline" size="sm" onClick={() => { if (window.confirm("Excluir este alerta? Esta ação não pode ser desfeita.")) remove.mutate({ id: alert.id }); }} className="rounded-sm border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"><Trash2 className="mr-1.5 h-4 w-4" />Excluir</Button></div></div>})}</div>}</section>
+      <section className="overflow-hidden rounded-sm border border-slate-200 bg-white shadow-sm"><div className="flex items-center justify-between border-b bg-slate-50 px-6 py-4"><div><h2 className="font-bold text-[#071d41]">Alertas cadastrados</h2><p className="text-xs text-slate-500">O total de leituras considera somente confirmações do usuário comum.</p></div></div>{alerts.isLoading ? <div className="flex justify-center p-12"><Loader2 className="h-5 w-5 animate-spin" /></div> : allAlerts.length === 0 ? <div className="p-12 text-center"><FileText className="mx-auto h-9 w-9 text-slate-400" /><p className="mt-3 text-sm text-slate-600">Ainda não há alertas cadastrados.</p></div> : <div className="divide-y">{allAlerts.map(alert => { const scheduled = new Date(alert.scheduledFor) > new Date(); return <div key={alert.id} className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-[#071d41]">{alert.title}</h3><Badge className={scheduled ? "bg-amber-100 text-amber-900 hover:bg-amber-100" : "bg-emerald-100 text-emerald-800 hover:bg-emerald-100"}>{scheduled ? "Agendado" : "Publicado"}</Badge><Badge className="gap-1 bg-blue-100 text-blue-800 hover:bg-blue-100"><UsersRound className="h-3.5 w-3.5" />{alert.readCount} {alert.readCount === 1 ? "leitura" : "leituras"}</Badge></div><p className="mt-1 line-clamp-1 text-sm text-slate-600">{alert.summary}</p><p className="mt-2 text-xs text-slate-500">Publicação: {formatDate(alert.scheduledFor)} · Criado: {formatDate(alert.createdAt)}</p></div><div className="flex flex-wrap gap-2"><Button variant="outline" size="sm" onClick={() => setReaderAlert(alert)} className="rounded-sm"><UsersRound className="mr-1.5 h-4 w-4" />Leituras</Button>{scheduled && <Button variant="outline" size="sm" onClick={() => setFormAlert(alert)} className="rounded-sm"><Pencil className="mr-1.5 h-4 w-4" />Editar</Button>}<Button variant="outline" size="sm" onClick={() => { if (window.confirm("Excluir este alerta? Esta ação não pode ser desfeita.")) remove.mutate({ id: alert.id }); }} className="rounded-sm border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"><Trash2 className="mr-1.5 h-4 w-4" />Excluir</Button></div></div>})}</div>}</section>
     </div>
     <AlertFormDialog current={formAlert} onClose={() => setFormAlert(undefined)} />
     <ReadersDialog alert={readerAlert} onClose={() => setReaderAlert(null)} />
+    <PasswordChangeDialog open={passwordOpen} onClose={() => setPasswordOpen(false)} />
   </>;
 }
 

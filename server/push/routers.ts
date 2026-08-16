@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import * as pushDb from "./db";
 
 export const pushRouter = router({
@@ -20,7 +20,7 @@ export const pushRouter = router({
     return { success: true };
   }),
 
-  getVapidPublicKey: protectedProcedure.query(() => {
+  getVapidPublicKey: publicProcedure.query(() => {
     return { publicKey: process.env.VAPID_PUBLIC_KEY ?? "" };
   }),
 

@@ -46,9 +46,10 @@ export async function subscribeToPush(
     if (!registration) return false;
 
     console.log("[Push] Fetching VAPID public key...");
-    const res = await fetch("/api/trpc/push.getVapidPublicKey");
+    const res = await fetch("/api/trpc/push.getVapidPublicKey", { credentials: "include" });
     const json = await res.json();
-    const publicKey = json?.result?.data?.publicKey;
+    console.log("[Push] Raw response:", JSON.stringify(json));
+    const publicKey = json?.result?.data?.json?.publicKey ?? json?.result?.data?.publicKey;
     console.log("[Push] VAPID public key:", publicKey ? `${publicKey.substring(0, 10)}...` : "(empty)");
     if (!publicKey) {
       console.error("[Push] VAPID public key is empty. Check VAPID_PUBLIC_KEY env var.");
