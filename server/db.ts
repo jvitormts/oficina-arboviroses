@@ -76,8 +76,10 @@ export async function createAlert(alert: Omit<InsertAlert, "id" | "createdAt">) 
 
 export async function updateAlert(id: number, changes: Partial<Omit<InsertAlert, "id" | "createdAt" | "createdBy">>) {
   const db = requiredDb(await getDb());
-  const result = await db.update(alerts).set(changes).where(eq(alerts.id, id));
-  return Number((result as any).affectedRows ?? 0) > 0;
+  const existing = await getAlertById(id);
+  if (!existing) return false;
+  await db.update(alerts).set(changes).where(eq(alerts.id, id));
+  return true;
 }
 
 export async function getAlertById(id: number) {
@@ -87,8 +89,10 @@ export async function getAlertById(id: number) {
 
 export async function deleteAlert(id: number) {
   const db = requiredDb(await getDb());
-  const result = await db.delete(alerts).where(eq(alerts.id, id));
-  return Number((result as any).affectedRows ?? 0) > 0;
+  const existing = await getAlertById(id);
+  if (!existing) return false;
+  await db.delete(alerts).where(eq(alerts.id, id));
+  return true;
 }
 
 export async function listAllAlerts() {
