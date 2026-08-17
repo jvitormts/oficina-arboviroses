@@ -36,7 +36,7 @@ Há duas formas: **Blueprint** (automática) ou **manual**.
 3. Configure:
    - **Runtime:** Node
    - **Build Command:** `pnpm install --frozen-lockfile && pnpm build`
-   - **Start Command:** `pnpm db:push && pnpm start`
+   - **Start Command:** `pnpm start`
    - **Plan:** Free (web service)
 4. Em **Environment Variables**, adicione as variáveis da seção abaixo.
 
@@ -59,13 +59,13 @@ O `DATABASE_URL` pode ser tanto a URL **externa** (com `?sslmode=require`) quant
 ## 4. Deploy
 
 1. Faça push do código para o repositório conectado.
-2. O Render roda o build (`pnpm build`) e, no start, executa `pnpm db:push` para criar/atualizar as tabelas automaticamente.
+2. O Render roda o build (`pnpm build`) e, na inicialização, o próprio servidor aplica as migrações automaticamente (cria as tabelas no PostgreSQL).
 3. Acesse a URL fornecida pelo Render.
 
 ---
 
 ## Notas
 
-- `pnpm db:push` roda a cada start (incluindo quando a instância Free "acorda" após inatividade). É seguro e idempotente.
+- As tabelas são criadas automaticamente na inicialização do servidor (migrações em `drizzle/migrations`).
 - O web service Free é suspenso após ~15 min sem tráfego; a primeira requisição após isso pode demorar alguns segundos.
 - As contas (admin e usuários) são criadas/verificadas automaticamente na inicialização do servidor.

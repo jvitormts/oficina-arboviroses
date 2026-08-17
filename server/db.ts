@@ -1,5 +1,6 @@
 import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
+import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import { Alert, alerts, alertReads, InsertAlert, InsertUser, users, User } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -16,6 +17,11 @@ export async function getDb() {
     _db = drizzle(client);
   }
   return _db;
+}
+
+export async function runMigrations() {
+  const db = requiredDb(await getDb());
+  await migrate(db, { migrationsFolder: "./drizzle/migrations" });
 }
 
 function requiredDb(db: Awaited<ReturnType<typeof getDb>>) {

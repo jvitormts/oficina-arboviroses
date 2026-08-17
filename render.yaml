@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     buildCommand: pnpm install --frozen-lockfile && pnpm build
-    startCommand: pnpm db:push && pnpm start
+    startCommand: pnpm start
     envVars:
       - key: DATABASE_URL
         sync: false

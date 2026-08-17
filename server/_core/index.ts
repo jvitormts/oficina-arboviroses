@@ -7,6 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { ensureFixedAdmin } from "../seed";
+import { runMigrations } from "../db";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 
@@ -30,6 +31,12 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  try {
+    await runMigrations();
+  } catch (error) {
+    console.error("[Migrations] Falha ao aplicar migrações:", error);
+  }
+
   try {
     await ensureFixedAdmin();
   } catch (error) {
